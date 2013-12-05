@@ -4,7 +4,7 @@
   <title><![CDATA[Matt Snider]]></title>
   <link href="http://msnider.github.io/atom.xml" rel="self"/>
   <link href="http://msnider.github.io/"/>
-  <updated>2013-12-04T14:07:37-05:00</updated>
+  <updated>2013-12-05T00:32:39-05:00</updated>
   <id>http://msnider.github.io/</id>
   <author>
     <name><![CDATA[Matt Snider]]></name>
@@ -12,5 +12,67 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Creating a Self-Signed SSL Certificate for an Amazon ELB]]></title>
+    <link href="http://msnider.github.io/blog/2013/12/05/creating-a-self-signed-ssl-certificate-for-an-amazon-elb/"/>
+    <updated>2013-12-05T00:06:01-05:00</updated>
+    <id>http://msnider.github.io/blog/2013/12/05/creating-a-self-signed-ssl-certificate-for-an-amazon-elb</id>
+    <content type="html"><![CDATA[<ol>
+<li>Generate a Private Key
+ The Private Key is used to decrypt messages sent to the server. Keep this
+ safe and secret! Use any password when prompted (we&rsquo;ll remove it later).
+ <code>openssl genrsa -des3 -out domain.key 1024</code></li>
+<li>Generate a Certificate Signing Request (CSR)
+ The CSR contains the Public Key, used to encrypt messages, and information
+ about the application so the end user (visitor) can see, so enter the
+ information accordingly.
+ <code>openssl req -nodes -newkey rsa:2048 -keyout domain.key -out domain.csr</code></li>
+<li>Remove the Password from the Private Key
+ <code>cp domain.key domain.key.password</code>
+ <code>openssl rsa -in domain.key.password -out domain.key</code></li>
+<li>Generate the Certificate
+ Make sure to set the number of days before expiration, set to 1 year below.
+ <code>openssl x509 -req -days 365 -in domain.csr -signkey domain.key -out domain.crt</code></li>
+<li>Open the AWS Console to upload your certificate
+
+<ol>
+<li>Open the AWS Console</li>
+<li>Open the EC2 Dashboard then view &ldquo;Load Balancers&rdquo;</li>
+<li>Select any load balancer or create a new one (You don&rsquo;t have to assign it to this ELB)</li>
+<li>Click on the Listeners tab of the load balancer</li>
+<li>Select HTTPS for a new listener and under SSL Certificate click &ldquo;Select&rdquo;</li>
+<li>Choose &ldquo;Upload a new SSL Certificate&rdquo; and give it a name</li>
+</ol>
+</li>
+<li>Copy the Private Key to the &ldquo;Private Key&rdquo; field
+
+<ol>
+<li>Output the private key to the command line
+ <code>openssl rsa -in domain.key -text</code></li>
+<li>Copy everything from the &ldquo;Begin&rdquo; to the &ldquo;End&rdquo; tags (inclusive)</li>
+</ol>
+</li>
+<li>Copy the Certificate to the &ldquo;Public Key Certificate&rdquo; field
+
+<ol>
+<li>Output the certificate to the command line
+ <code>openssl x509 -inform PEM -in domain.crt</code></li>
+<li>Copy everything from the &ldquo;Begin&rdquo; to the &ldquo;End&rdquo; tags (inclusive)</li>
+</ol>
+</li>
+<li>Save the SSL Cert in AWS</li>
+<li>Assign this certificate to this or another ELB or within Elastic Beanstalk</li>
+</ol>
+
+
+<h3>References</h3>
+
+<ul>
+<li><a href="http://almostalldigital.wordpress.com/2013/03/07/self-signed-ssl-certificate-for-ec2-load-balancer/">http://almostalldigital.wordpress.com/2013/03/07/self-signed-ssl-certificate-for-ec2-load-balancer/</a></li>
+</ul>
+
+]]></content>
+  </entry>
   
 </feed>
