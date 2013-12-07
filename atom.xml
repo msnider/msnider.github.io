@@ -4,7 +4,7 @@
   <title><![CDATA[Matt Snider]]></title>
   <link href="http://msnider.github.io/atom.xml" rel="self"/>
   <link href="http://msnider.github.io/"/>
-  <updated>2013-12-05T00:36:07-05:00</updated>
+  <updated>2013-12-06T20:40:02-05:00</updated>
   <id>http://msnider.github.io/</id>
   <author>
     <name><![CDATA[Matt Snider]]></name>
@@ -12,6 +12,64 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Force HTTPS/SSL on Amazon Elastic Beanstalk]]></title>
+    <link href="http://msnider.github.io/blog/2013/12/06/force-https-slash-ssl-on-amazon-elastic-beanstalk/"/>
+    <updated>2013-12-06T20:12:57-05:00</updated>
+    <id>http://msnider.github.io/blog/2013/12/06/force-https-slash-ssl-on-amazon-elastic-beanstalk</id>
+    <content type="html"><![CDATA[<ol>
+<li>Configure Elastic Beanstalk to allow both HTTP &amp; HTTPS. Make sure to set an
+ SSL Certicate. This will require a refresh of the Elastic Load Balancer.
+ <img src="http://msnider.github.io/images/aws-eb-https-configuration.png">
+ Now your application should be accessible by both HTTP and HTTPS.</li>
+<li>Every Elastic Beanstalk application uses the Apache web server which can be
+ used to redirect non-SSL traffic to the HTTPS endpoint.
+ The easiest way to do this is to create a custom configuration file which
+ creates the re-write rules.
+
+<ol>
+<li>Create (if you don&rsquo;t already have) a &ldquo;.ebextensions&rdquo; directory in the root
+ of the deployed directory. So in PHP apps, this is the top level or in
+ Java apps this would be src/main/webapp</li>
+<li>Create a Apache config file called &ldquo;elasticbeanstalk.conf&rdquo; in .ebextensions</li>
+<li><p>I use the following rules in elasticbeanstalk.conf:
+         &#8220;` apacheconf elasticbeanstalk.conf
+         <VirtualHost *:80>
+           <Proxy *>
+             Order deny,allow
+             Allow from all
+           </Proxy></p>
+
+<pre><code>       ProxyPass / http://localhost:8080/ retry=0
+       ProxyPassReverse / http://localhost:8080/
+       ProxyPreserveHost on
+
+       RewriteEngine On
+       RewriteCond %{HTTP:X-Forwarded-Proto} !https
+       RewriteRule !/status https://%{SERVER_NAME}%{REQUEST_URI} [L,R]
+
+       LogFormat "%h (%{X-Forwarded-For}i) %l %u %t \"%r\" %&gt;s %b \"%{Referer}i\" \"%{User-Agent}i\""
+       ErrorLog /var/log/httpd/elasticbeanstalk-error_log
+       TransferLog /var/log/httpd/elasticbeanstalk-access_log
+     &lt;/VirtualHost&gt;
+     ```
+</code></pre></li>
+<li>Create a .config file in the same directory (i.e. https.config) and add
+ the command for moving the .conf file to the correct spot:
+         &#8220;` yaml https.config
+         container_commands:
+           01_replace_apache_server:
+             command: cp .ebextensions/elasticbeanstalk.conf /etc/httpd/conf.d/elasticbeanstalk.conf</li>
+</ol>
+</li>
+<li>Deploy your application with the new config files</li>
+<li>Restart Apache (or rebuild the environment) to pick up the changes
+ To restart Apache run: <code>sudo /etc/init.d/httpd restart</code></li>
+</ol>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Creating a Self-Signed SSL Certificate for an Amazon ELB]]></title>
