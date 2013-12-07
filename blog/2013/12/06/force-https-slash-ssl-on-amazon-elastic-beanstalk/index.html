@@ -9,7 +9,8 @@
   <meta name="author" content="Matt Snider">
 
   
-  <meta name="description" content="Configure Elastic Beanstalk to allow both HTTP &amp; HTTPS. Make sure to set an SSL Certicate. This will require a refresh of the Elastic Load &hellip;">
+  <meta name="description" content="1. Configure Elastic Beanstalk to allow both HTTP &amp; HTTPS. Make sure to set an
+SSL Certicate. This will require a refresh of the Elastic Load &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -89,56 +90,83 @@
   </header>
 
 
-<div class="entry-content"><ol>
-<li>Configure Elastic Beanstalk to allow both HTTP &amp; HTTPS. Make sure to set an
- SSL Certicate. This will require a refresh of the Elastic Load Balancer.
- <img src="/images/aws-eb-https-configuration.png">
- Now your application should be accessible by both HTTP and HTTPS.</li>
-<li>Every Elastic Beanstalk application uses the Apache web server which can be
- used to redirect non-SSL traffic to the HTTPS endpoint.
- The easiest way to do this is to create a custom configuration file which
- creates the re-write rules.
+<div class="entry-content"><p>1. Configure Elastic Beanstalk to allow both HTTP &amp; HTTPS. Make sure to set an
+SSL Certicate. This will require a refresh of the Elastic Load Balancer.
+<img src="/images/aws-eb-https-configuration.png">
+Now your application should be accessible by both HTTP and HTTPS.</p>
 
-<ol>
-<li>Create (if you don&rsquo;t already have) a &ldquo;.ebextensions&rdquo; directory in the root
- of the deployed directory. So in PHP apps, this is the top level or in
- Java apps this would be src/main/webapp</li>
-<li>Create a Apache config file called &ldquo;elasticbeanstalk.conf&rdquo; in .ebextensions</li>
-<li><p>I use the following rules in elasticbeanstalk.conf:
-         &#8220;` apacheconf elasticbeanstalk.conf
-         <VirtualHost *:80>
-           <Proxy *>
-             Order deny,allow
-             Allow from all
-           </Proxy></p>
+<p>2. Every Elastic Beanstalk application uses the Apache web server which can be
+used to redirect non-SSL traffic to the HTTPS endpoint.
+The easiest way to do this is to create a custom configuration file which
+creates the re-write rules.</p>
 
-<pre><code>       ProxyPass / http://localhost:8080/ retry=0
-       ProxyPassReverse / http://localhost:8080/
-       ProxyPreserveHost on
+<p>3. Create (if you don&rsquo;t already have) a &ldquo;.ebextensions&rdquo; directory in the root
+of the deployed directory. So in PHP apps, this is the top level or in
+Java apps this would be src/main/webapp</p>
 
-       RewriteEngine On
-       RewriteCond %{HTTP:X-Forwarded-Proto} !https
-       RewriteRule !/status https://%{SERVER_NAME}%{REQUEST_URI} [L,R]
+<p>4. Create a Apache config file called &ldquo;elasticbeanstalk.conf&rdquo; in .ebextensions</p>
 
-       LogFormat "%h (%{X-Forwarded-For}i) %l %u %t \"%r\" %&gt;s %b \"%{Referer}i\" \"%{User-Agent}i\""
-       ErrorLog /var/log/httpd/elasticbeanstalk-error_log
-       TransferLog /var/log/httpd/elasticbeanstalk-access_log
-     &lt;/VirtualHost&gt;
-     ```
-</code></pre></li>
-<li>Create a .config file in the same directory (i.e. https.config) and add
- the command for moving the .conf file to the correct spot:
-         &#8220;` yaml https.config
-         container_commands:
-           01_replace_apache_server:
-             command: cp .ebextensions/elasticbeanstalk.conf /etc/httpd/conf.d/elasticbeanstalk.conf</li>
-</ol>
-</li>
-<li>Deploy your application with the new config files</li>
-<li>Restart Apache (or rebuild the environment) to pick up the changes
- To restart Apache run: <code>sudo /etc/init.d/httpd restart</code></li>
-</ol>
+<p>5. I use the following rules in elasticbeanstalk.conf:</p>
 
+<figure class='code'><figcaption><span>elasticbeanstalk.conf </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='apache'><span class='line'><span class="nt">&lt;VirtualHost</span> <span class="s">*:80</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;Proxy</span> <span class="s">*</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nb">Order</span> deny,allow
+</span><span class='line'>    <span class="nb">Allow</span> from <span class="k">all</span>
+</span><span class='line'>  <span class="nt">&lt;/Proxy&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nb">ProxyPass</span> / http://localhost:8080/ retry=0
+</span><span class='line'>  <span class="nb">ProxyPassReverse</span> / http://localhost:8080/
+</span><span class='line'>  <span class="nb">ProxyPreserveHost</span> <span class="k">on</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nb">RewriteEngine</span> <span class="k">On</span>
+</span><span class='line'>  <span class="nb">RewriteCond</span> %{HTTP:X-Forwarded-Proto} !https
+</span><span class='line'>  <span class="nb">RewriteRule</span> !/status https://%{SERVER_NAME}%{REQUEST_URI} [L,R]
+</span><span class='line'>
+</span><span class='line'>  <span class="nb">LogFormat</span> <span class="s2">&quot;%h (%{X-Forwarded-For}i) %l %u %t \&quot;%r\&quot; %&gt;s %b \&quot;%{Referer}i\&quot; \&quot;%{User-Agent}i\&quot;&quot;</span>
+</span><span class='line'>  <span class="nb">ErrorLog</span> <span class="sx">/var/log/httpd/elasticbeanstalk-error_log</span>
+</span><span class='line'>  <span class="nb">TransferLog</span> <span class="sx">/var/log/httpd/elasticbeanstalk-access_log</span>
+</span><span class='line'><span class="nt">&lt;/VirtualHost&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>6. Create a .config file in the same directory (i.e. https.config) and add
+the command for moving the .conf file to the correct spot:</p>
+
+<figure class='code'><figcaption><span>https.config </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='yaml'><span class='line'><span class="l-Scalar-Plain">container_commands</span><span class="p-Indicator">:</span>
+</span><span class='line'>  <span class="l-Scalar-Plain">01_replace_apache_server</span><span class="p-Indicator">:</span>
+</span><span class='line'>    <span class="l-Scalar-Plain">command</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">cp .ebextensions/elasticbeanstalk.conf /etc/httpd/conf.d/elasticbeanstalk.conf</span>
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>7. Deploy your application with the new config files</p>
+
+<p>8. Restart Apache (or rebuild the environment) to pick up the changes
+To restart Apache run: <code>sudo /etc/init.d/httpd restart</code></p>
 </div>
 
 
