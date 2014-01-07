@@ -5,11 +5,12 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Creating a Self-Signed SSL Certificate for an Amazon ELB - Matt Snider</title>
+  <title>VisualVM on a Remote EC2 instance over an SSH Tunnel - Matt Snider</title>
   <meta name="author" content="Matt Snider">
 
   
-  <meta name="description" content="Generate a Private Key The Private Key is used to decrypt messages sent to the server. Keep this safe and secret! Use any password when prompted (we &hellip;">
+  <meta name="description" content="Getting https://visualvm.java.net/ to work remotely can be difficult
+so I&rsquo;ve decided to record the steps that I use to connect to an Amazon EC2 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +19,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://msnider.github.io/blog/2013/12/05/creating-a-self-signed-ssl-certificate-for-an-amazon-elb">
+  <link rel="canonical" href="http://msnider.github.io/blog/2014/01/07/visualvm-on-a-remote-ec2-instance-over-an-ssh-tunnel">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Matt Snider" type="application/atom+xml">
@@ -60,7 +61,7 @@
   
   <header>
     
-      <h1 class="entry-title">Creating a Self-Signed SSL Certificate for an Amazon ELB</h1>
+      <h1 class="entry-title">VisualVM on a Remote EC2 Instance Over an SSH Tunnel</h1>
     
     
       <p class="meta">
@@ -76,65 +77,98 @@
   
 
 
-<time datetime="2013-12-05T00:06:01-05:00" pubdate data-updated="true">Dec 5<span>th</span>, 2013</time>
+<time datetime="2014-01-07T14:04:44-05:00" pubdate data-updated="true">Jan 7<span>th</span>, 2014</time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><ol>
-<li>Generate a Private Key
- The Private Key is used to decrypt messages sent to the server. Keep this
- safe and secret! Use any password when prompted (we&rsquo;ll remove it later).
- <code>openssl genrsa -des3 -out domain.key 1024</code></li>
-<li>Generate a Certificate Signing Request (CSR)
- The CSR contains the Public Key, used to encrypt messages, and information
- about the application so the end user (visitor) can see, so enter the
- information accordingly.
- <code>openssl req -nodes -newkey rsa:2048 -keyout domain.key -out domain.csr</code></li>
-<li>Remove the Password from the Private Key
- <code>cp domain.key domain.key.password</code>
- <code>openssl rsa -in domain.key.password -out domain.key</code></li>
-<li>Generate the Certificate
- Make sure to set the number of days before expiration, set to 1 year below.
- <code>openssl x509 -req -days 365 -in domain.csr -signkey domain.key -out domain.crt</code></li>
-<li>Open the AWS Console to upload your certificate
+<div class="entry-content"><p>Getting <a href="VisualVM">https://visualvm.java.net/</a> to work remotely can be difficult
+so I&rsquo;ve decided to record the steps that I use to connect to an Amazon EC2
+instance.</p>
+
+<p>I&rsquo;ll prefix each step with which machine it should be run on. To be clear, we
+are running VisualVM on our local machine and trying to profile a JVM on a remote
+machine.</p>
+
+<p>The steps are as follows:</p>
+
+<h3><strong>LOCAL:</strong> Setup an SSH Tunnel to the remote machine on port 10000.</h3>
+
+<p>If you&rsquo;re using the <code>ssh</code> command (linux or Mac) this would be done using
+dynamic port forwarding:</p>
+
+<pre><code>ssh -D 10000 ec2-user@[ec2 ip or cname]
+</code></pre>
+
+<p>If you&rsquo;re on Windows, then you are probably using Putty, so the tunnel would be
+setup just like a regular SSH connection but add a Dynamic Forwarded Port under
+Connection &ndash;> SSH &ndash;> Tunnels.
+<img src="/images/putty-setup-dynamic-port-forwarding.png"></p>
+
+<p>Leave this tunnel open while you monitor the JVM.</p>
+
+<h3><strong>REMOTE:</strong> Enable JMX on the remote JVM</h3>
+
+<p>Add the following parameters to the JVM:</p>
+
+<pre><code>-Dcom.sun.management.jmxremote.port=9000
+-Dcom.sun.management.jmxremote.ssl=false
+-Dcom.sun.management.jmxremote.authenticate=false
+</code></pre>
+
+<h3><strong>REMOTE:</strong> Create a jstatd permissions file</h3>
+
+<p>Create a file named <code>permissions.txt</code> with the following contents:</p>
+
+<pre><code>grant {
+  permission java.security.AllPermission;
+};
+</code></pre>
+
+<h3><strong>REMOTE:</strong> Start jstatd</h3>
+
+<p>Run <code>jstatd -J-Djava.security.policy=permissions.txt</code>. Leave this running while
+you monitor the JVM.</p>
+
+<h3><strong>LOCAL:</strong> Open VisualVM</h3>
+
+<h3><strong>LOCAL:</strong> Enable VisualVM to use the SSH tunnel</h3>
 
 <ol>
-<li>Open the AWS Console</li>
-<li>Open the EC2 Dashboard then view &ldquo;Load Balancers&rdquo;</li>
-<li>Select any load balancer or create a new one (You don&rsquo;t have to assign it to this ELB)</li>
-<li>Click on the Listeners tab of the load balancer</li>
-<li>Select HTTPS for a new listener and under SSL Certificate click &ldquo;Select&rdquo;</li>
-<li>Choose &ldquo;Upload a new SSL Certificate&rdquo; and give it a name</li>
+<li>In VisualVM, open menu: Tools &ndash;> Options &ndash;> Network</li>
+<li>Select <code>Manual proxy settings</code></li>
+<li>Uncheck <code>Use the same proxy settings for all protocols</code></li>
+<li>Set SOCKS Proxy:  <code>localhost</code>, Port: <code>10,000</code></li>
 </ol>
-</li>
-<li>Copy the Private Key to the &ldquo;Private Key&rdquo; field
+
+
+<h3><strong>REMOTE:</strong> Get the IP Address of the server</h3>
+
+<p>On Linux run <code>ifconfig</code> and generally you are looking for the ip address after
+<code>inet addr</code> on <code>eth0</code> but it may vary.</p>
+
+<p>On Windows run <code>ipconfig</code> and you are looking for the <code>IPv4 Address</code></p>
+
+<h3><strong>LOCAL:</strong> Add the Remote Host to VisualVM</h3>
 
 <ol>
-<li>Output the private key to the command line
- <code>openssl rsa -in domain.key -text</code></li>
-<li>Copy everything from the &ldquo;Begin&rdquo; to the &ldquo;End&rdquo; tags (inclusive)</li>
-</ol>
-</li>
-<li>Copy the Certificate to the &ldquo;Public Key Certificate&rdquo; field
-
-<ol>
-<li>Output the certificate to the command line
- <code>openssl x509 -inform PEM -in domain.crt</code></li>
-<li>Copy everything from the &ldquo;Begin&rdquo; to the &ldquo;End&rdquo; tags (inclusive)</li>
-</ol>
-</li>
-<li>Save the SSL Cert in AWS</li>
-<li>Assign this certificate to this or another ELB or within Elastic Beanstalk</li>
+<li>In VisualVM, open menu: File &ndash;> Add Remote Host</li>
+<li>Add the IP Address from the previous step</li>
+<li>Under Advanced Settings, remove the default jstatd connection</li>
+<li>Click OK</li>
+<li>Right-Click the new host and select &ldquo;Add JMX Connection&hellip;&rdquo;</li>
+<li>Enter the IP Address from the previous step with port 9000 as the connection. This should look like: 10.0.0.1:9000.</li>
+<li>Click OK</li>
+<li>VisualVM should connect! You should now be able to monitor the remote JVM!</li>
 </ol>
 
 
-<h3>References</h3>
+<h4>References</h4>
 
 <ul>
-<li><a href="http://almostalldigital.wordpress.com/2013/03/07/self-signed-ssl-certificate-for-ec2-load-balancer/">http://almostalldigital.wordpress.com/2013/03/07/self-signed-ssl-certificate-for-ec2-load-balancer/</a></li>
+<li><a href="http://pedanttinen.blogspot.com/2012/02/remote-visualvm-session-through-ssh.html">http://pedanttinen.blogspot.com/2012/02/remote-visualvm-session-through-ssh.html</a></li>
 </ul>
 
 </div>
@@ -159,7 +193,7 @@
   
 
 
-<time datetime="2013-12-05T00:06:01-05:00" pubdate data-updated="true">Dec 5<span>th</span>, 2013</time>
+<time datetime="2014-01-07T14:04:44-05:00" pubdate data-updated="true">Jan 7<span>th</span>, 2014</time>
       
 
 
@@ -167,7 +201,7 @@
     
       <div class="sharing">
   
-  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://msnider.github.io/blog/2013/12/05/creating-a-self-signed-ssl-certificate-for-an-amazon-elb/" data-via="" data-counturl="http://msnider.github.io/blog/2013/12/05/creating-a-self-signed-ssl-certificate-for-an-amazon-elb/" >Tweet</a>
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://msnider.github.io/blog/2014/01/07/visualvm-on-a-remote-ec2-instance-over-an-ssh-tunnel/" data-via="" data-counturl="http://msnider.github.io/blog/2014/01/07/visualvm-on-a-remote-ec2-instance-over-an-ssh-tunnel/" >Tweet</a>
   
   
   
@@ -176,8 +210,8 @@
     
     <p class="meta">
       
+        <a class="basic-alignment left" href="/blog/2013/12/06/force-https-slash-ssl-on-amazon-elastic-beanstalk/" title="Previous Post: Force HTTPS/SSL on Amazon Elastic Beanstalk">&laquo; Force HTTPS/SSL on Amazon Elastic Beanstalk</a>
       
-        <a class="basic-alignment right" href="/blog/2013/12/06/force-https-slash-ssl-on-amazon-elastic-beanstalk/" title="Next Post: Force HTTPS/SSL on Amazon Elastic Beanstalk">Force HTTPS/SSL on Amazon Elastic Beanstalk &raquo;</a>
       
     </p>
   </footer>
@@ -235,8 +269,8 @@
       
         
         // var disqus_developer = 1;
-        var disqus_identifier = 'http://msnider.github.io/blog/2013/12/05/creating-a-self-signed-ssl-certificate-for-an-amazon-elb/';
-        var disqus_url = 'http://msnider.github.io/blog/2013/12/05/creating-a-self-signed-ssl-certificate-for-an-amazon-elb/';
+        var disqus_identifier = 'http://msnider.github.io/blog/2014/01/07/visualvm-on-a-remote-ec2-instance-over-an-ssh-tunnel/';
+        var disqus_url = 'http://msnider.github.io/blog/2014/01/07/visualvm-on-a-remote-ec2-instance-over-an-ssh-tunnel/';
         var disqus_script = 'embed.js';
       
     (function () {

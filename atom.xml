@@ -4,7 +4,7 @@
   <title><![CDATA[Matt Snider]]></title>
   <link href="http://msnider.github.io/atom.xml" rel="self"/>
   <link href="http://msnider.github.io/"/>
-  <updated>2013-12-07T02:36:33-05:00</updated>
+  <updated>2014-01-07T15:10:27-05:00</updated>
   <id>http://msnider.github.io/</id>
   <author>
     <name><![CDATA[Matt Snider]]></name>
@@ -12,6 +12,101 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[VisualVM on a Remote EC2 instance over an SSH Tunnel]]></title>
+    <link href="http://msnider.github.io/blog/2014/01/07/visualvm-on-a-remote-ec2-instance-over-an-ssh-tunnel/"/>
+    <updated>2014-01-07T14:04:44-05:00</updated>
+    <id>http://msnider.github.io/blog/2014/01/07/visualvm-on-a-remote-ec2-instance-over-an-ssh-tunnel</id>
+    <content type="html"><![CDATA[<p>Getting <a href="VisualVM">https://visualvm.java.net/</a> to work remotely can be difficult
+so I&rsquo;ve decided to record the steps that I use to connect to an Amazon EC2
+instance.</p>
+
+<p>I&rsquo;ll prefix each step with which machine it should be run on. To be clear, we
+are running VisualVM on our local machine and trying to profile a JVM on a remote
+machine.</p>
+
+<p>The steps are as follows:</p>
+
+<h3><strong>LOCAL:</strong> Setup an SSH Tunnel to the remote machine on port 10000.</h3>
+
+<p>If you&rsquo;re using the <code>ssh</code> command (linux or Mac) this would be done using
+dynamic port forwarding:</p>
+
+<pre><code>ssh -D 10000 ec2-user@[ec2 ip or cname]
+</code></pre>
+
+<p>If you&rsquo;re on Windows, then you are probably using Putty, so the tunnel would be
+setup just like a regular SSH connection but add a Dynamic Forwarded Port under
+Connection &ndash;> SSH &ndash;> Tunnels.
+<img src="http://msnider.github.io/images/putty-setup-dynamic-port-forwarding.png"></p>
+
+<p>Leave this tunnel open while you monitor the JVM.</p>
+
+<h3><strong>REMOTE:</strong> Enable JMX on the remote JVM</h3>
+
+<p>Add the following parameters to the JVM:</p>
+
+<pre><code>-Dcom.sun.management.jmxremote.port=9000
+-Dcom.sun.management.jmxremote.ssl=false
+-Dcom.sun.management.jmxremote.authenticate=false
+</code></pre>
+
+<h3><strong>REMOTE:</strong> Create a jstatd permissions file</h3>
+
+<p>Create a file named <code>permissions.txt</code> with the following contents:</p>
+
+<pre><code>grant {
+  permission java.security.AllPermission;
+};
+</code></pre>
+
+<h3><strong>REMOTE:</strong> Start jstatd</h3>
+
+<p>Run <code>jstatd -J-Djava.security.policy=permissions.txt</code>. Leave this running while
+you monitor the JVM.</p>
+
+<h3><strong>LOCAL:</strong> Open VisualVM</h3>
+
+<h3><strong>LOCAL:</strong> Enable VisualVM to use the SSH tunnel</h3>
+
+<ol>
+<li>In VisualVM, open menu: Tools &ndash;> Options &ndash;> Network</li>
+<li>Select <code>Manual proxy settings</code></li>
+<li>Uncheck <code>Use the same proxy settings for all protocols</code></li>
+<li>Set SOCKS Proxy:  <code>localhost</code>, Port: <code>10,000</code></li>
+</ol>
+
+
+<h3><strong>REMOTE:</strong> Get the IP Address of the server</h3>
+
+<p>On Linux run <code>ifconfig</code> and generally you are looking for the ip address after
+<code>inet addr</code> on <code>eth0</code> but it may vary.</p>
+
+<p>On Windows run <code>ipconfig</code> and you are looking for the <code>IPv4 Address</code></p>
+
+<h3><strong>LOCAL:</strong> Add the Remote Host to VisualVM</h3>
+
+<ol>
+<li>In VisualVM, open menu: File &ndash;> Add Remote Host</li>
+<li>Add the IP Address from the previous step</li>
+<li>Under Advanced Settings, remove the default jstatd connection</li>
+<li>Click OK</li>
+<li>Right-Click the new host and select &ldquo;Add JMX Connection&hellip;&rdquo;</li>
+<li>Enter the IP Address from the previous step with port 9000 as the connection. This should look like: 10.0.0.1:9000.</li>
+<li>Click OK</li>
+<li>VisualVM should connect! You should now be able to monitor the remote JVM!</li>
+</ol>
+
+
+<h4>References</h4>
+
+<ul>
+<li><a href="http://pedanttinen.blogspot.com/2012/02/remote-visualvm-session-through-ssh.html">http://pedanttinen.blogspot.com/2012/02/remote-visualvm-session-through-ssh.html</a></li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[Force HTTPS/SSL on Amazon Elastic Beanstalk]]></title>
