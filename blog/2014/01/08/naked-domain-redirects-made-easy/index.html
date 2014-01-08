@@ -10,8 +10,8 @@
 
   
   <meta name="description" content="If you build a lot of websites you will soon discover how annoying workin with
-http://en.wikipedia.org/wiki/A_record#A can be. They point directly
-at &hellip;">
+A-Records can be. They point directly
+at an IP-Address, which unless &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -86,18 +86,18 @@ at &hellip;">
 
 
 <div class="entry-content"><p>If you build a lot of websites you will soon discover how annoying workin with
-<a href="A-Records">http://en.wikipedia.org/wiki/A_record#A</a> can be. They point directly
+<a href="http://en.wikipedia.org/wiki/A_record#A">A-Records</a> can be. They point directly
 at an IP-Address, which unless its a load balancer is almost never what you
 want. Since I frequently work in cloud-based environments, IP Addresses often
 change when I want a new version of a server and this means the A-Record would
 no longer work.</p>
 
-<p>Instead, I prefer to work with DNS and redirect based on <a href="CNAMEs">http://en.wikipedia.org/wiki/CNAME_record</a>,
+<p>Instead, I prefer to work with DNS and redirect based on <a href="http://en.wikipedia.org/wiki/CNAME_record">CNAMEs</a>,
 but this is impossible with the Apex/Root/Naked Domain. See Heroku&rsquo;s article on
-<a href="The%20Limitations%20of%20DNS%20A-Records">https://devcenter.heroku.com/articles/apex-domains</a>.</p>
+<a href="https://devcenter.heroku.com/articles/apex-domains">The Limitations of DNS A-Records</a>.</p>
 
 <p>To handle this problem, I&rsquo;ve been using an excellent and free service called
-<a href="WWWizer.com">http://wwwizer.com/naked-domain-redirect</a>. They provide a free
+<a href="http://wwwizer.com/naked-domain-redirect">WWWizer.com</a>. They provide a free
 redirect from your naked domain to the WWW subdomain which you can then CNAME as
 needed.</p>
 
