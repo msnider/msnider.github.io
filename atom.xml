@@ -4,7 +4,7 @@
   <title><![CDATA[Matt Snider]]></title>
   <link href="http://msnider.github.io/atom.xml" rel="self"/>
   <link href="http://msnider.github.io/"/>
-  <updated>2014-01-07T15:10:27-05:00</updated>
+  <updated>2014-01-08T14:02:23-05:00</updated>
   <id>http://msnider.github.io/</id>
   <author>
     <name><![CDATA[Matt Snider]]></name>
@@ -12,6 +12,34 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Naked Domain Redirects Made Easy]]></title>
+    <link href="http://msnider.github.io/blog/2014/01/08/naked-domain-redirects-made-easy/"/>
+    <updated>2014-01-08T13:54:56-05:00</updated>
+    <id>http://msnider.github.io/blog/2014/01/08/naked-domain-redirects-made-easy</id>
+    <content type="html"><![CDATA[<p>If you build a lot of websites you will soon discover how annoying workin with
+<a href="A-Records">http://en.wikipedia.org/wiki/A_record#A</a> can be. They point directly
+at an IP-Address, which unless its a load balancer is almost never what you
+want. Since I frequently work in cloud-based environments, IP Addresses often
+change when I want a new version of a server and this means the A-Record would
+no longer work.</p>
+
+<p>Instead, I prefer to work with DNS and redirect based on <a href="CNAMEs">http://en.wikipedia.org/wiki/CNAME_record</a>,
+but this is impossible with the Apex/Root/Naked Domain. See Heroku&rsquo;s article on
+<a href="The%20Limitations%20of%20DNS%20A-Records">https://devcenter.heroku.com/articles/apex-domains</a>.</p>
+
+<p>To handle this problem, I&rsquo;ve been using an excellent and free service called
+<a href="WWWizer.com">http://wwwizer.com/naked-domain-redirect</a>. They provide a free
+redirect from your naked domain to the WWW subdomain which you can then CNAME as
+needed.</p>
+
+<p>All you have to do is point your naked domain&rsquo;s A-Record to 174.129.25.170.</p>
+
+<p>You could of course run this service yourself, but it&rsquo;s nice to not have to run
+yet another server.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[VisualVM on a Remote EC2 instance over an SSH Tunnel]]></title>
